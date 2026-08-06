@@ -1,0 +1,28 @@
+### Create profile
+POST http://localhost:9091/profiles
+Content-Type: application/json
+
+{
+  "name": "Ali Məmmədov",
+  "email": "ali@example.com",
+  "bio": "Java backend developer"
+}
+
+### Get all profiles
+GET http://localhost:9091/profiles
+
+### Get profile by ID
+GET http://localhost:9091/profiles/1
+
+### Update profile
+PUT http://localhost:9091/profiles/1
+Content-Type: application/json
+
+{
+  "name": "Ali Məmmədli",
+  "email": "ali.mammadli@example.com",
+  "bio": "Updated profile biography"
+}
+
+### Delete profile
+DELETE http://localhost:9091/profiles/1

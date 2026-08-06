@@ -1,0 +1,45 @@
+### Gateway - Get all profiles
+GET http://localhost:9090/profiles
+
+### Gateway - Create profile
+POST http://localhost:9090/profiles
+Content-Type: application/json
+
+{
+  "name": "Nihat Əliyev",
+  "email": "nihat@example.com",
+  "bio": "Backend developer"
+}
+
+### Gateway - Get profile by ID
+GET http://localhost:9090/profiles/1
+
+### Gateway - Update profile
+PUT http://localhost:9090/profiles/1
+Content-Type: application/json
+
+{
+  "name": "Nihat Məmmədli",
+  "email": "nihat.mammadli@example.com",
+  "bio": "Senior backend developer"
+}
+
+### Gateway - Create feedback
+POST http://localhost:9090/feedback
+Content-Type: application/json
+
+{
+  "name": "Aysel Məmmədova",
+  "email": "aysel@example.com",
+  "message": "Gateway üzərindən göndərilən feedback."
+}
+
+### Gateway - Get all feedback
+GET http://localhost:9090/feedback
+
+### Gateway - Delete profile
+DELETE http://localhost:9090/profiles/1
+
+### Test logging filter
+GET http://localhost:9090/profiles
+Authorization: Bearer secret-token

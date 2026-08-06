@@ -1,0 +1,32 @@
+### Create first feedback
+POST http://localhost:9092/feedback
+Content-Type: application/json
+
+{
+  "name": "Aysel Məmmədova",
+  "email": "aysel@example.com",
+  "message": "Tətbiq çox rahat işləyir."
+}
+
+### Create second feedback
+POST http://localhost:9092/feedback
+Content-Type: application/json
+
+{
+  "name": "Murad Əliyev",
+  "email": "murad@example.com",
+  "message": "Yeni funksiyalar əlavə olunsa yaxşı olar."
+}
+
+### Get all feedback
+GET http://localhost:9092/feedback
+
+### Validation test
+POST http://localhost:9092/feedback
+Content-Type: application/json
+
+{
+  "name": "",
+  "email": "wrong-email",
+  "message": ""
+}

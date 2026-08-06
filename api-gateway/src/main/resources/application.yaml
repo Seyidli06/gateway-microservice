@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: profile-service-route
+              uri: http://localhost:9091
+              predicates:
+                - Path=/profiles,/profiles/**
+
+            - id: feedback-service-route
+              uri: http://localhost:9092
+              predicates:
+                - Path=/feedback,/feedback/**
+
+server:
+  port: 9090
+
+logging:
+  level:
+    com.example.apigateway.filter: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,logfile"

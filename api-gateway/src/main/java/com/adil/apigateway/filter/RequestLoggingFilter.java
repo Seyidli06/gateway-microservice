@@ -14,9 +14,12 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Set;
+import java.util.UUID;
 
 @Component
 public class RequestLoggingFilter implements GlobalFilter, Ordered {
+
+    public static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
 
     private static final Logger log =
             LoggerFactory.getLogger(RequestLoggingFilter.class);
@@ -33,62 +36,116 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
             ServerWebExchange exchange,
             GatewayFilterChain chain
     ) {
-        ServerHttpRequest request = exchange.getRequest();
+        ServerHttpRequest originalRequest = exchange.getRequest();
+
+        String correlationId = resolveCorrelationId(originalRequest);
+
+        ServerHttpRequest request = originalRequest
+                .mutate()
+                .headers(headers ->
+                        headers.set(
+                                CORRELATION_ID_HEADER,
+                                correlationId
+                        )
+                )
+                .build();
+
+        ServerWebExchange mutatedExchange = exchange
+                .mutate()
+                .request(request)
+                .build();
+
+        mutatedExchange.getResponse()
+                .getHeaders()
+                .set(
+                        CORRELATION_ID_HEADER,
+                        correlationId
+                );
 
         long startTime = System.nanoTime();
 
         String method = request.getMethod().name();
         String path = request.getURI().getRawPath();
         String query = request.getURI().getRawQuery();
-        HttpHeaders safeHeaders = sanitizeHeaders(request.getHeaders());
+
+        HttpHeaders safeHeaders =
+                sanitizeHeaders(request.getHeaders());
 
         log.info(
-                "Incoming request: method={}, path={}, query={}, headers={}",
+                "Incoming request: correlationId={}, method={}, path={}, query={}, headers={}",
+                correlationId,
                 method,
                 path,
                 query,
                 safeHeaders
         );
 
-        return chain.filter(exchange)
+        return chain.filter(mutatedExchange)
                 .doOnError(exception ->
                         log.error(
-                                "Request failed: method={}, path={}, message={}",
+                                "Request failed: correlationId={}, method={}, path={}, message={}",
+                                correlationId,
                                 method,
                                 path,
                                 exception.getMessage()
                         )
                 )
                 .doFinally(signalType -> {
-                    long duration = Duration.ofNanos(
-                            System.nanoTime() - startTime
-                    ).toMillis();
+                    long durationMs = Duration
+                            .ofNanos(
+                                    System.nanoTime() - startTime
+                            )
+                            .toMillis();
 
                     HttpStatusCode statusCode =
-                            exchange.getResponse().getStatusCode();
+                            mutatedExchange
+                                    .getResponse()
+                                    .getStatusCode();
 
-                    Object status = statusCode == null
-                            ? "UNKNOWN"
-                            : statusCode.value();
+                    Object status =
+                            statusCode == null
+                                    ? "UNKNOWN"
+                                    : statusCode.value();
 
                     log.info(
-                            "Completed request: method={}, path={}, status={}, durationMs={}",
+                            "Completed request: correlationId={}, method={}, path={}, status={}, durationMs={}",
+                            correlationId,
                             method,
                             path,
                             status,
-                            duration
+                            durationMs
                     );
                 });
     }
 
-    private HttpHeaders sanitizeHeaders(HttpHeaders originalHeaders) {
+    private String resolveCorrelationId(
+            ServerHttpRequest request
+    ) {
+        String existingCorrelationId =
+                request.getHeaders()
+                        .getFirst(CORRELATION_ID_HEADER);
+
+        if (existingCorrelationId == null
+                || existingCorrelationId.isBlank()) {
+            return UUID.randomUUID().toString();
+        }
+
+        return existingCorrelationId.trim();
+    }
+
+    private HttpHeaders sanitizeHeaders(
+            HttpHeaders originalHeaders
+    ) {
         HttpHeaders safeHeaders = new HttpHeaders();
 
         safeHeaders.putAll(originalHeaders);
 
         for (String sensitiveHeader : SENSITIVE_HEADERS) {
             if (safeHeaders.containsHeader(sensitiveHeader)) {
-                safeHeaders.set(sensitiveHeader, "[REDACTED]");
+                safeHeaders.set(
+                        sensitiveHeader,
+                        "[REDACTED]"
+                );
             }
         }
 

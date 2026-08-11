@@ -1,4 +1,14 @@
 package com.adil.profileservice.dto;
 
-public class ProfileResponse {
+import java.time.Instant;
+
+public record ProfileResponse(
+        Long id,
+        String name,
+        String email,
+        String bio,
+        Long version,
+        Instant createdAt,
+        Instant updatedAt
+) {
 }

@@ -1,0 +1,36 @@
+services:
+
+  profile-db:
+    ports:
+      - "5434:5432"
+
+
+  feedback-db:
+    ports:
+      - "5435:5432"
+
+
+  rate-limit-redis:
+    ports:
+      - "6379:6379"
+
+
+  profile-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+    ports:
+      - "9091:9091"
+
+
+  feedback-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+    ports:
+      - "9092:9092"
+
+
+  api-gateway:
+    environment:
+      SPRING_PROFILES_ACTIVE: docker

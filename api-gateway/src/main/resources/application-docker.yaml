@@ -1,0 +1,52 @@
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  data:
+    redis:
+      host: ${REDIS_HOST:rate-limit-redis}
+      port: ${REDIS_PORT:6379}
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+
+            - id: profile-service
+              uri: ${PROFILE_SERVICE_URL:http://profile-service:9091}
+
+              predicates:
+                - Path=/profiles/**
+
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 64KB
+
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH_RATE:5}
+                    redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST_CAPACITY:10}
+                    redis-rate-limiter.requestedTokens: 1
+
+
+            - id: feedback-service
+              uri: ${FEEDBACK_SERVICE_URL:http://feedback-service:9092}
+
+              predicates:
+                - Path=/feedback/**
+
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 64KB
+
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH_RATE:5}
+                    redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST_CAPACITY:10}
+                    redis-rate-limiter.requestedTokens: 1

@@ -1,0 +1,23 @@
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: profile-service
+              uri: ${TEST_PROFILE_SERVICE_URL}
+              predicates:
+                - Path=/profiles/**
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 64KB
+
+            - id: feedback-service
+              uri: ${TEST_FEEDBACK_SERVICE_URL}
+              predicates:
+                - Path=/feedback/**
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 64KB

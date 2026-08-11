@@ -1,0 +1,28 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+*.iml
+.vscode
+
+# Secrets / environment
+secrets/
+.env
+.env.*
+
+# Maven build output
+**/target/
+
+# Logs
+*.log
+**/*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp

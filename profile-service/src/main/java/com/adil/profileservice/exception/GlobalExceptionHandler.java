@@ -1,12 +1,13 @@
 package com.adil.profileservice.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -14,24 +15,35 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ProfileNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleProfileNotFound(
-            ProfileNotFoundException exception
+    public ResponseEntity<ApiErrorResponse> handleProfileNotFound(
+            ProfileNotFoundException exception,
+            HttpServletRequest request
     ) {
-        Map<String, Object> errorResponse = new LinkedHashMap<>();
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+    }
 
-        errorResponse.put("timestamp", LocalDateTime.now());
-        errorResponse.put("status", HttpStatus.NOT_FOUND.value());
-        errorResponse.put("error", "Not Found");
-        errorResponse.put("message", exception.getMessage());
-
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(errorResponse);
+    @ExceptionHandler(DuplicateProfileEmailException.class)
+    public ResponseEntity<ApiErrorResponse> handleDuplicateEmail(
+            DuplicateProfileEmailException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                exception.getMessage(),
+                request.getRequestURI(),
+                null
+        );
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationErrors(
-            MethodArgumentNotValidException exception
+    public ResponseEntity<ApiErrorResponse> handleValidationErrors(
+            MethodArgumentNotValidException exception,
+            HttpServletRequest request
     ) {
         Map<String, String> validationErrors = new LinkedHashMap<>();
 
@@ -44,15 +56,44 @@ public class GlobalExceptionHandler {
                         )
                 );
 
-        Map<String, Object> errorResponse = new LinkedHashMap<>();
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "Request validation failed",
+                request.getRequestURI(),
+                validationErrors
+        );
+    }
 
-        errorResponse.put("timestamp", LocalDateTime.now());
-        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
-        errorResponse.put("error", "Validation Failed");
-        errorResponse.put("errors", validationErrors);
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleUnexpectedException(
+            Exception exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred",
+                request.getRequestURI(),
+                null
+        );
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildResponse(
+            HttpStatus status,
+            String message,
+            String path,
+            Map<String, String> validationErrors
+    ) {
+        ApiErrorResponse body = new ApiErrorResponse(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                path,
+                validationErrors
+        );
 
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(errorResponse);
+                .status(status)
+                .body(body);
     }
 }

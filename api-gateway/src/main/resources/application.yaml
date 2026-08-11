@@ -2,30 +2,29 @@ spring:
   application:
     name: api-gateway
 
-  cloud:
-    gateway:
-      server:
-        webflux:
-          routes:
-            - id: profile-service-route
-              uri: http://localhost:9091
-              predicates:
-                - Path=/profiles,/profiles/**
-
-            - id: feedback-service-route
-              uri: http://localhost:9092
-              predicates:
-                - Path=/feedback,/feedback/**
-
 server:
   port: 9090
-
-logging:
-  level:
-    com.example.apigateway.filter: INFO
 
 management:
   endpoints:
     web:
       exposure:
-        include: "health,logfile"
+        include: health,info,metrics
+
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+app:
+  security:
+    cors:
+      allowed-origins:
+        - ${FRONTEND_ORIGIN:http://localhost:5173}

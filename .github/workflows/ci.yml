@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+
+  test:
+    name: Maven Verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Make Maven Wrapper executable
+        run: chmod +x mvnw
+
+      - name: Run Maven verification
+        run: ./mvnw --batch-mode clean verify
+
+
+  docker:
+    name: Docker Validation
+    runs-on: ubuntu-latest
+
+    needs:
+      - test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Create temporary CI secrets
+        run: |
+          mkdir -p secrets
+          printf '%s' 'ci_profile_password' > secrets/profile_db_password.txt
+          printf '%s' 'ci_feedback_password' > secrets/feedback_db_password.txt
+
+      - name: Validate Docker Compose
+        run: docker compose config
+
+      - name: Build Docker images
+        run: docker compose build

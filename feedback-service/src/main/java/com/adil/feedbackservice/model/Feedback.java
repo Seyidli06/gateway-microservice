@@ -1,69 +1,76 @@
 package com.adil.feedbackservice.model;
 
-import java.time.LocalDateTime;
+import jakarta.persistence.*;
 
+import java.time.Instant;
+
+@Entity
+@Table(name = "feedback")
 public class Feedback {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;
-    private String email;
-    private String message;
-    private LocalDateTime createdAt;
 
-    public Feedback() {
+    @Column(nullable = false, length = 100)
+    private String name;
+
+    @Column(nullable = false, length = 320)
+    private String email;
+
+    @Column(nullable = false, length = 2000)
+    private String message;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
+    @Column(
+            name = "created_at",
+            nullable = false,
+            updatable = false
+    )
+    private Instant createdAt;
+
+    protected Feedback() {
     }
 
     public Feedback(
-            Long id,
             String name,
             String email,
-            String message,
-            LocalDateTime createdAt
+            String message
     ) {
-        this.id = id;
         this.name = name;
         this.email = email;
         this.message = message;
-        this.createdAt = createdAt;
+    }
+
+    @PrePersist
+    void prePersist() {
+        createdAt = Instant.now();
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getEmail() {
         return email;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
     public String getMessage() {
         return message;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public Long getVersion() {
+        return version;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
 }

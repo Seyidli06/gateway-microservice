@@ -35,3 +35,8 @@ build/
 .idea/
 .env
 *.log
+
+# Local secrets
+secrets/*.txt
+.env.*
+!.env.example

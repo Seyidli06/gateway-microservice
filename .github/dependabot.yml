@@ -1,0 +1,77 @@
+version: 2
+
+updates:
+
+  # Maven dependencies
+  - package-ecosystem: "maven"
+    directories:
+      - "/"
+      - "/api-gateway"
+      - "/profile-service"
+      - "/feedback-service"
+
+    schedule:
+      interval: "weekly"
+
+    open-pull-requests-limit: 10
+
+    groups:
+      maven-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+
+    schedule:
+      interval: "weekly"
+
+    open-pull-requests-limit: 5
+
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+
+  # Docker Compose images
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+
+    schedule:
+      interval: "weekly"
+
+    open-pull-requests-limit: 5
+
+
+  # Profile Service Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/profile-service"
+
+    schedule:
+      interval: "weekly"
+
+    open-pull-requests-limit: 5
+
+
+  # Feedback Service Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/feedback-service"
+
+    schedule:
+      interval: "weekly"
+
+    open-pull-requests-limit: 5
+
+
+  # API Gateway Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/api-gateway"
+
+    schedule:
+      interval: "weekly"
+
+    open-pull-requests-limit: 5

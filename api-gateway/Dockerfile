@@ -23,4 +23,6 @@ COPY --from=build /app/api-gateway/target/*.jar app.jar
 
 EXPOSE 9090
 
+USER 10001:10001
+
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -23,4 +23,6 @@ COPY --from=build /app/feedback-service/target/*.jar app.jar
 
 EXPOSE 9092
 
+USER 10001:10001
+
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -24,4 +24,6 @@ COPY --from=build /app/profile-service/target/*.jar app.jar
 
 EXPOSE 9091
 
+USER 10001:10001
+
 ENTRYPOINT ["java", "-jar", "app.jar"]

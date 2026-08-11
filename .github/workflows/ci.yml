@@ -36,8 +36,8 @@ jobs:
         run: ./mvnw --batch-mode clean verify
 
 
-  docker:
-    name: Docker Validation
+  docker-e2e:
+    name: Docker E2E
     runs-on: ubuntu-latest
 
     needs:
@@ -47,14 +47,113 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Create temporary CI secrets
+      - name: Create CI secrets
         run: |
           mkdir -p secrets
-          printf '%s' 'ci_profile_password' > secrets/profile_db_password.txt
-          printf '%s' 'ci_feedback_password' > secrets/feedback_db_password.txt
+          printf '%s' 'profile_password' > secrets/profile_db_password.txt
+          printf '%s' 'feedback_password' > secrets/feedback_db_password.txt
 
       - name: Validate Docker Compose
         run: docker compose config
 
       - name: Build Docker images
         run: docker compose build
+
+      - name: Start Docker stack
+        run: docker compose up -d --wait --wait-timeout 180
+
+      - name: Show container status
+        run: docker compose ps
+
+      - name: Check Gateway readiness
+        run: |
+          curl --fail --silent \
+            http://localhost:9090/actuator/health/readiness
+
+      - name: Check Profile route
+        run: |
+          curl --fail --silent \
+            "http://localhost:9090/profiles?page=0&size=5"
+
+      - name: Check Feedback route
+        run: |
+          curl --fail --silent \
+            "http://localhost:9090/feedback?page=0&size=5"
+
+      - name: Verify Profile creation through Gateway
+        run: |
+          curl --fail --silent \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --data '{
+              "name": "CI Profile",
+              "email": "ci.profile@example.com",
+              "bio": "Created by GitHub Actions"
+            }' \
+            http://localhost:9090/profiles
+
+      - name: Verify Feedback creation through Gateway
+        run: |
+          curl --fail --silent \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --data '{
+              "name": "CI Feedback",
+              "email": "ci.feedback@example.com",
+              "message": "Created by GitHub Actions"
+            }' \
+            http://localhost:9090/feedback
+
+      - name: Check rate limiting
+        run: |
+          found_429=false
+
+          for i in $(seq 1 50); do
+            status=$(curl \
+              --silent \
+              --output /dev/null \
+              --write-out "%{http_code}" \
+              "http://localhost:9090/profiles?page=0&size=5")
+
+            echo "Request $i -> $status"
+
+            if [ "$status" = "429" ]; then
+              found_429=true
+              break
+            fi
+          done
+
+          if [ "$found_429" != "true" ]; then
+            echo "Expected at least one 429 response"
+            exit 1
+          fi
+
+      - name: Verify backend ports are not public
+        run: |
+          if curl \
+            --silent \
+            --fail \
+            --connect-timeout 2 \
+            http://localhost:9091/profiles; then
+
+            echo "Profile service must not be publicly reachable"
+            exit 1
+          fi
+
+          if curl \
+            --silent \
+            --fail \
+            --connect-timeout 2 \
+            http://localhost:9092/feedback; then
+
+            echo "Feedback service must not be publicly reachable"
+            exit 1
+          fi
+
+      - name: Print Docker logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop Docker stack
+        if: always()
+        run: docker compose down -v

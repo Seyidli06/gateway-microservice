@@ -73,6 +73,7 @@ services:
 
 
   profile-service:
+    image: gateway-microservices/profile-service:local
     build:
       context: .
       dockerfile: profile-service/Dockerfile
@@ -111,6 +112,7 @@ services:
 
 
   feedback-service:
+    image: gateway-microservices/feedback-service:local
     build:
       context: .
       dockerfile: feedback-service/Dockerfile
@@ -152,6 +154,7 @@ services:
 
 
   api-gateway:
+    image: gateway-microservices/api-gateway:local
     build:
       context: .
       dockerfile: api-gateway/Dockerfile

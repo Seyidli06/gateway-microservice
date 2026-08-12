@@ -393,4 +393,86 @@ class ProfileControllerIntegrationTest {
                 + port
                 + path;
     }
+
+    @Test
+    void updateProfile_shouldReturn409WhenEmailBelongsToAnotherProfile() {
+        Map first = createProfile(
+                "First User",
+                "first@example.com"
+        );
+
+        createProfile(
+                "Second User",
+                "second@example.com"
+        );
+
+        Long firstId =
+                ((Number) first.get("id"))
+                        .longValue();
+
+        Map<String, Object> updateBody = Map.of(
+                "name", "First User",
+                "email", "second@example.com",
+                "bio", "Updated Bio"
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, Object>> entity =
+                new HttpEntity<>(
+                        updateBody,
+                        headers
+                );
+
+        try {
+            restTemplate.exchange(
+                    url("/profiles/" + firstId),
+                    HttpMethod.PUT,
+                    entity,
+                    Map.class
+            );
+
+            fail("Expected 409 Conflict");
+
+        } catch (HttpClientErrorException e) {
+            assertEquals(
+                    HttpStatus.CONFLICT,
+                    e.getStatusCode()
+            );
+        }
+    }
+
+    @Test
+    void deleteProfile_shouldMakeProfileUnavailable() {
+        Map created = createProfile(
+                "Delete Me",
+                "delete2@example.com"
+        );
+
+        Long id =
+                ((Number) created.get("id"))
+                        .longValue();
+
+        ResponseEntity<Void> deleteResponse =
+                restTemplate.exchange(
+                        url("/profiles/" + id),
+                        HttpMethod.DELETE,
+                        HttpEntity.EMPTY,
+                        Void.class
+                );
+
+        assertEquals(
+                HttpStatus.NO_CONTENT,
+                deleteResponse.getStatusCode()
+        );
+
+        assertThrows(
+                HttpClientErrorException.NotFound.class,
+                () -> restTemplate.getForEntity(
+                        url("/profiles/" + id),
+                        Map.class
+                )
+        );
+    }
 }

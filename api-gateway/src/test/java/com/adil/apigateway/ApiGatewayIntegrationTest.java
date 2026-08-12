@@ -181,4 +181,47 @@ class ApiGatewayIntegrationTest {
                 );
     }
 
+    @Test
+    void gateway_shouldAddCorrelationIdWhenMissing() {
+        webTestClient
+                .get()
+                .uri("/profiles")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectHeader()
+                .exists("X-Correlation-Id");
+    }
+
+    @Test
+    void gateway_shouldPreserveExistingCorrelationId() {
+        String correlationId = "test-correlation-123";
+
+        webTestClient
+                .get()
+                .uri("/profiles")
+                .header(
+                        "X-Correlation-Id",
+                        correlationId
+                )
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectHeader()
+                .valueEquals(
+                        "X-Correlation-Id",
+                        correlationId
+                );
+    }
+
+    @Test
+    void unknownRoute_shouldBeUnauthorized() {
+        webTestClient
+                .get()
+                .uri("/unknown")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized();
+    }
+
 }

@@ -65,7 +65,7 @@ services:
 
 
   rate-limit-redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: gateway-rate-limit-redis
 
     networks:

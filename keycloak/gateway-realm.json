@@ -1,0 +1,95 @@
+{
+  "realm": "gateway",
+  "enabled": true,
+  "displayName": "Gateway Microservices",
+
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+
+  "roles": {
+    "realm": [
+      {
+        "name": "USER",
+        "description": "Regular API user"
+      },
+      {
+        "name": "ADMIN",
+        "description": "API administrator"
+      }
+    ]
+  },
+
+  "clients": [
+    {
+      "clientId": "gateway-client",
+      "name": "Gateway Client",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+
+      "redirectUris": [
+        "http://localhost:*"
+      ],
+
+      "webOrigins": [
+        "http://localhost:*"
+      ]
+    }
+  ],
+
+  "users": [
+
+    {
+      "username": "user",
+      "enabled": true,
+      "emailVerified": true,
+
+      "firstName": "Gateway",
+      "lastName": "User",
+      "email": "user@example.com",
+
+      "requiredActions": [],
+
+      "credentials": [
+        {
+          "type": "password",
+          "value": "User123!",
+          "temporary": false
+        }
+      ],
+
+      "realmRoles": [
+        "USER"
+      ]
+    },
+
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+
+      "firstName": "Gateway",
+      "lastName": "Admin",
+      "email": "admin@example.com",
+
+      "requiredActions": [],
+
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin123!",
+          "temporary": false
+        }
+      ],
+
+      "realmRoles": [
+        "USER",
+        "ADMIN"
+      ]
+    }
+  ]
+}

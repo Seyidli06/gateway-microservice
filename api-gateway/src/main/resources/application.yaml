@@ -2,6 +2,13 @@ spring:
   application:
     name: api-gateway
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI:http://localhost:8180/realms/gateway}
+          jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8180/realms/gateway/protocol/openid-connect/certs}
+
 server:
   port: 9090
 
@@ -20,6 +27,7 @@ management:
   health:
     livenessstate:
       enabled: true
+
     readinessstate:
       enabled: true
 

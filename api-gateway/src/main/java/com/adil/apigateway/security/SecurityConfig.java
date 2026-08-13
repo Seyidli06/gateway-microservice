@@ -13,12 +13,23 @@ import org.springframework.security.web.server.header.XFrameOptionsServerHttpHea
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
+import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
+import reactor.core.publisher.Flux;
+
 import java.time.Duration;
 import java.util.List;
 
 @Configuration
 @EnableConfigurationProperties(CorsProperties.class)
 public class SecurityConfig {
+
+    private final JwtRoleConverter jwtRoleConverter;
+
+    public SecurityConfig(
+            JwtRoleConverter jwtRoleConverter
+    ) {
+        this.jwtRoleConverter = jwtRoleConverter;
+    }
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
@@ -61,11 +72,41 @@ public class SecurityConfig {
                          * JWT əlavə edilərsə gələcəkdə
                          * authenticated() ilə dəyişdirilə bilər.
                          */
-                        .pathMatchers("/profiles/**")
-                        .permitAll()
+                        .pathMatchers(
+                                HttpMethod.GET,
+                                "/profiles/**"
+                        )
+                        .hasAnyRole("USER", "ADMIN")
 
-                        .pathMatchers("/feedback/**")
-                        .permitAll()
+                        .pathMatchers(
+                                HttpMethod.POST,
+                                "/profiles/**"
+                        )
+                        .hasRole("ADMIN")
+
+                        .pathMatchers(
+                                HttpMethod.PUT,
+                                "/profiles/**"
+                        )
+                        .hasRole("ADMIN")
+
+                        .pathMatchers(
+                                HttpMethod.DELETE,
+                                "/profiles/**"
+                        )
+                        .hasRole("ADMIN")
+
+                        .pathMatchers(
+                                HttpMethod.POST,
+                                "/feedback"
+                        )
+                        .hasAnyRole("USER", "ADMIN")
+
+                        .pathMatchers(
+                                HttpMethod.GET,
+                                "/feedback/**"
+                        )
+                        .hasRole("ADMIN")
 
                         /*
                          * Browser CORS preflight requests.
@@ -161,6 +202,14 @@ public class SecurityConfig {
                         )
                 )
 
+                .oauth2ResourceServer(oauth2 ->
+                        oauth2.jwt(jwt ->
+                                jwt.jwtAuthenticationConverter(
+                                        jwtAuthenticationConverter()
+                                )
+                        )
+                )
+
                 .build();
     }
 
@@ -230,5 +279,19 @@ public class SecurityConfig {
         );
 
         return source;
+    }
+
+    private ReactiveJwtAuthenticationConverter jwtAuthenticationConverter() {
+
+        ReactiveJwtAuthenticationConverter converter =
+                new ReactiveJwtAuthenticationConverter();
+
+        converter.setJwtGrantedAuthoritiesConverter(
+                jwt -> Flux.fromIterable(
+                        jwtRoleConverter.convert(jwt)
+                )
+        );
+
+        return converter;
     }
 }

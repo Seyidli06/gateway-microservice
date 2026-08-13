@@ -20,7 +20,11 @@ services:
       - profile-data-network
 
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U profile_user -d profile_db" ]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U profile_user -d profile_db"
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -48,7 +52,11 @@ services:
       - feedback-data-network
 
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U feedback_user -d feedback_db" ]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U feedback_user -d feedback_db"
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -64,7 +72,12 @@ services:
       - rate-limit-network
 
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "ping"
+        ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -72,8 +85,33 @@ services:
     restart: unless-stopped
 
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.0
+    container_name: gateway-keycloak
+
+    command:
+      - start-dev
+      - --import-realm
+
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: keycloak-admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: keycloak-admin
+
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+
+    ports:
+      - "8180:8080"
+
+    networks:
+      - auth-network
+
+    restart: unless-stopped
+
+
   profile-service:
     image: gateway-microservices/profile-service:local
+
     build:
       context: .
       dockerfile: profile-service/Dockerfile
@@ -82,9 +120,9 @@ services:
 
     environment:
       SPRING_PROFILES_ACTIVE: docker,prod
+
       PROFILE_DB_URL: jdbc:postgresql://profile-db:5432/profile_db
       PROFILE_DB_USERNAME: profile_user
-
 
     expose:
       - "9091"
@@ -100,7 +138,11 @@ services:
     restart: unless-stopped
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:9091/actuator/health/readiness || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:9091/actuator/health/readiness || exit 1"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -113,6 +155,7 @@ services:
 
   feedback-service:
     image: gateway-microservices/feedback-service:local
+
     build:
       context: .
       dockerfile: feedback-service/Dockerfile
@@ -120,7 +163,7 @@ services:
     container_name: feedback-service
 
     environment:
-      SPRING_PROFILES_ACTIVE: docker, prod
+      SPRING_PROFILES_ACTIVE: docker,prod
 
       FEEDBACK_DB_URL: jdbc:postgresql://feedback-db:5432/feedback_db
       FEEDBACK_DB_USERNAME: feedback_user
@@ -143,18 +186,20 @@ services:
     restart: unless-stopped
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:9092/actuator/health/readiness || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:9092/actuator/health/readiness || exit 1"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
 
-
-
-
   api-gateway:
     image: gateway-microservices/api-gateway:local
+
     build:
       context: .
       dockerfile: api-gateway/Dockerfile
@@ -162,7 +207,7 @@ services:
     container_name: api-gateway
 
     environment:
-      SPRING_PROFILES_ACTIVE: docker, prod
+      SPRING_PROFILES_ACTIVE: docker,prod
 
       PROFILE_SERVICE_URL: http://profile-service:9091
       FEEDBACK_SERVICE_URL: http://feedback-service:9092
@@ -173,12 +218,17 @@ services:
       RATE_LIMIT_REPLENISH_RATE: 5
       RATE_LIMIT_BURST_CAPACITY: 10
 
+      JWT_ISSUER_URI: http://localhost:8180/realms/gateway
+
+      JWT_JWK_SET_URI: http://keycloak:8080/realms/gateway/protocol/openid-connect/certs
+
     ports:
       - "9090:9090"
 
     networks:
       - edge-network
       - rate-limit-network
+      - auth-network
 
     depends_on:
       profile-service:
@@ -190,10 +240,17 @@ services:
       rate-limit-redis:
         condition: service_healthy
 
+      keycloak:
+        condition: service_started
+
     restart: unless-stopped
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/actuator/health/readiness || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:9090/actuator/health/readiness || exit 1"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -201,11 +258,14 @@ services:
 
 
 volumes:
+
   profile-db-data:
+
   feedback-db-data:
 
 
 networks:
+
   edge-network:
     driver: bridge
 
@@ -221,8 +281,12 @@ networks:
     driver: bridge
     internal: true
 
+  auth-network:
+    driver: bridge
+
 
 secrets:
+
   profile_db_password:
     file: ./secrets/profile_db_password.txt
 

@@ -1,5 +1,7 @@
 package com.adil.apigateway.filter;
 
+import static com.adil.apigateway.security.SecurityConstants.CORRELATION_ID_HEADER;
+import static com.adil.apigateway.security.SecurityConstants.MAX_CORRELATION_ID_LENGTH;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -15,11 +17,14 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
+import com.adil.apigateway.security.SecurityConstants;
+
+import java.util.regex.Pattern;
 
 @Component
 public class RequestLoggingFilter implements GlobalFilter, Ordered {
 
-    public static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
+
 
     private static final Logger log =
             LoggerFactory.getLogger(RequestLoggingFilter.class);
@@ -30,6 +35,9 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
             "Proxy-Authorization",
             "X-API-Key"
     );
+
+    private static final Pattern SAFE_CORRELATION_ID =
+            Pattern.compile("^[A-Za-z0-9._-]+$");
 
     @Override
     public Mono<Void> filter(
@@ -127,12 +135,29 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
 
         if (existingCorrelationId == null
                 || existingCorrelationId.isBlank()) {
-            return UUID.randomUUID().toString();
+            return generateCorrelationId();
         }
 
-        return existingCorrelationId.trim();
+        String normalizedCorrelationId =
+                existingCorrelationId.trim();
+
+        if (normalizedCorrelationId.length()
+                > MAX_CORRELATION_ID_LENGTH) {
+            return generateCorrelationId();
+        }
+
+        if (!SAFE_CORRELATION_ID
+                .matcher(normalizedCorrelationId)
+                .matches()) {
+            return generateCorrelationId();
+        }
+
+        return normalizedCorrelationId;
     }
 
+    private String generateCorrelationId() {
+        return UUID.randomUUID().toString();
+    }
     private HttpHeaders sanitizeHeaders(
             HttpHeaders originalHeaders
     ) {
